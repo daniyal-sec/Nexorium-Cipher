@@ -1,0 +1,51 @@
+def build_finding(
+    category,
+    finding,
+    evidence,
+    explanation,
+    severity,
+    confidence
+):
+    return {
+        "category": category,
+        "finding": finding,
+        "evidence": evidence,
+        "explanation": explanation,
+        "severity": severity,
+        "confidence": confidence
+    }
+
+
+def create_finding(extension, detected_format, valid_extensions):
+
+    if detected_format == "unknown":
+        return [
+            build_finding(
+                "File Identification",
+                "Unknown file format",
+                "No known file-format signature matched the beginning of the file.",
+                (
+                    "Cipher could not identify the file format using its current "
+                    "signature database. This does not indicate that the file is malicious."
+                ),
+                "LOW",
+                "HIGH"
+            )
+        ]
+
+    if extension not in valid_extensions:
+        return [
+            build_finding(
+                "File Identification",
+                "Extension mismatch",
+                f"Extension '{extension}' does not match detected format '{detected_format}'.",
+                (
+                    "The file extension does not match the detected file format. "
+                    "This may be benign, accidental, or potentially suspicious."
+                ),
+                "LOW",
+                "HIGH"
+            )
+        ]
+
+    return []
