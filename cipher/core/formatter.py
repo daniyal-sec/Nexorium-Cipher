@@ -219,10 +219,11 @@ def format_finding(finding, index=None):
     )
 
     number = f"{_c(f'{index:02d}', _Ansi.DIM)}  " if index is not None else ""
-    heading = f"{number}{_level_tag(finding['severity'])} {_c(finding['finding'], _Ansi.BOLD)}"
+    heading = f"{number}{_c(finding['finding'], _Ansi.BOLD)}"
 
     lines = [heading]
     lines.append(f"{field_indent}Category   : {finding['category']}")
+    lines.append(f"{field_indent}Severity   : {_level_tag(finding['severity'])}")
     lines.append(f"{field_indent}Confidence : {_level_tag(finding['confidence'])}")
     lines.append("")
     lines.append(_c(f"{field_indent}Evidence:", _Ansi.DIM))

@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-Phase%201%20%C2%B7%20Foundation-9D4EDD?style=for-the-badge" alt="status"/>
+  <img src="https://img.shields.io/badge/status-Phase%201%20Complete-9D4EDD?style=for-the-badge" alt="status"/>
   <img src="https://img.shields.io/badge/category-Malware%20Analysis-9D4EDD?style=for-the-badge" alt="category"/>
   <img src="https://img.shields.io/badge/license-MIT-brightgreen?style=for-the-badge" alt="license"/>
 </p>
@@ -31,6 +31,7 @@
 
 - [📖 Overview](#overview)
 - [🚦 Current Status](#current-status)
+- [🚀 Installation & Usage](#installation--usage)
 - [💻 Example](#example)
 - [🏗️ Project Architecture](#project-architecture)
 - [🧩 Explainable Findings](#explainable-findings)
@@ -56,40 +57,102 @@ Cipher is being developed incrementally as both a cybersecurity learning project
 
 ## 🚦 Current Status
 
-### Phase 1 — Foundation
+### Phase 1 — Foundation &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/>
+
+Phase 1 is complete. Cipher now runs as a real interactive application (`python -m cipher`) rather than a development script, and produces a full, explainable investigation report for any file you give it.
 
 <p align="left">
-<img src="https://img.shields.io/badge/-File%20Hashing-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-MD5-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-SHA--1-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-SHA--256-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Chunked%20File%20Reading-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-CLI%20File%20Input-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-File%20Existence%20Validation-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Directory%20Detection-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Basic%20Error%20Handling-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Reusable%20Hashing%20Module-2E8B57?style=flat-square"/>
+<img src="https://img.shields.io/badge/-Interactive%20CLI-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-python%20--m%20cipher-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-File%20Hashing-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-MD5-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-SHA--1-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-SHA--256-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-Chunked%20File%20Reading-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-File%20Metadata%20%26%20Timestamps-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Magic--Byte%20File%20Identification-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Extension%20Validation-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Explainable%20Evidence%20Engine-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Structured%20Findings-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Severity%20%26%20Confidence-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Custom%20Terminal%20Formatter-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Error%20Handling-24243e?style=flat-square"/>
 </p>
 
-The current implementation can calculate multiple hashes for a supplied file and detect common invalid inputs.
+Cipher currently identifies file formats using magic-byte/file-signature detection (PDF, PNG, ZIP, EXE, JPEG, GIF) and compares the detected format against the file's extension:
+
+| Status | Meaning |
+|---|---|
+| `MATCH` | The file extension agrees with the detected file format. |
+| `MISMATCH` | The file extension does not agree with the detected file format. |
+| `UNKNOWN` | Cipher could not identify the file format using its current signature database. |
+
+**Important:** `MATCH` does not prove a file is safe. `MISMATCH` does not prove a file is malicious. `UNKNOWN` does not prove a file is malicious either. These are observations from the current file-identification layer, not a verdict — they may warrant further investigation.
+
+---
+
+## 🚀 Installation & Usage
+
+**Requirements:**
+- Python 3.x
+- No external Python dependencies are currently required for Phase 1.
+
+**Run Cipher:**
+
+```
+python -m cipher
+```
+
+Cipher will prompt you for a file path:
+
+```
+Enter file path:
+```
+
+Both relative and absolute paths are supported, including paths containing spaces — you do not need to modify any Python source code to analyze a different file.
+
+Example:
+
+```
+python -m cipher
+
+Enter file path: C:\Users\User\Downloads\My Suspicious File.zip
+```
+
+Cipher will then analyze the file and display a full, formatted investigation report.
 
 ---
 
 ## 💻 Example
 
 ```
-python test_hashing.py "C:\path\to\file.txt"
+python -m cipher
+
+Enter file path: fake.pdf
 ```
 
-Example output:
-
 ```
-File: C:\path\to\file.txt
-MD5: ...
-SHA-1: ...
-SHA-256: ...
+TARGET
+File          : fake.pdf
+Size          : 128 bytes
+
+IDENTIFICATION
+Extension     : pdf
+Detected      : zip
+Valid Ext.    : ['zip']
+Status        : ⚠ [MISMATCH]
+
+FINDINGS (1)
+
+01  [LOW] Extension mismatch
+Category   : File Identification
+Confidence : [HIGH]
+
+Evidence:
+  Extension 'pdf' does not match detected format 'zip'.
+
+Explanation:
+  The file extension does not match the detected file format.
+  This may be benign, accidental, or potentially suspicious.
 ```
 
 Invalid input is handled cleanly:
 
 ```
+Enter file path: missing.txt
 ERROR: File not found.
 ```
 
 or:
 
 ```
+Enter file path: C:\Users\User\Downloads
 ERROR: The supplied path is a directory.
 Please provide a file.
 ```
@@ -98,20 +161,50 @@ Please provide a file.
 
 ## 🏗️ Project Architecture
 
-The project is being built as a modular analysis toolkit.
+The project is now a modular Python package with a clear separation between analysis and presentation.
 
 ```
 Nexorium-Cipher/
 │
-├── cipher/
-│   └── core/
-│       └── hashing.py
+├── assets/
+│   └── banner-cipher.svg
 │
-├── test_hashing.py
+├── cipher/
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── cli.py
+│   │
+│   └── core/
+│       ├── hashing.py
+│       ├── file_identifier.py
+│       ├── evidence.py
+│       └── formatter.py
+│
+├── tests/
+│   ├── test_hashing.py
+│   ├── test_evidence.py
+│   └── test_identifier.py
+│
 ├── README.md
 ├── .gitignore
 └── LICENSE
 ```
+
+*Visual summary of the analysis flow:*
+
+```mermaid
+flowchart TD
+    U["User"] --> CLI["CLI<br/>python -m cipher"]
+    CLI --> FI["File Identifier"]
+    FI --> HE["Hashing Engine"]
+    HE --> EE["Evidence Engine"]
+    EE --> TF["Terminal Formatter"]
+    TF --> R["Report"]
+```
+
+The formatter is a presentation layer only — it renders the result that `file_identifier.py`, `hashing.py`, and `evidence.py` already produced, and never performs analysis itself.
+
+The files inside `tests/` are development/testing scripts, not the normal way to run Cipher — for everyday use, run `python -m cipher`.
 
 The architecture will expand as additional analysis capabilities are implemented.
 
@@ -158,6 +251,8 @@ For example:
 | Confidence | 🟢 HIGH |
 
 This approach is intended to make analysis results easier to understand and investigate.
+
+**Severity** describes how significant or potentially impactful a finding may be. **Confidence** describes how strongly the currently available evidence supports that specific observation — it is not a probability that the file is malware, and a `HIGH` confidence finding does not mean the file is definitely malicious.
 
 ---
 
@@ -318,32 +413,45 @@ The objective is to understand how each component works rather than simply assem
 ## 🗺️ Roadmap
 
 <p align="left">
-<img src="https://img.shields.io/badge/Progress-7%2F21%20Items%20Complete-9D4EDD?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/Progress-10%2F27%20Items%20Complete-9D4EDD?style=for-the-badge"/>
 </p>
 
 <details open>
 <summary><b>✅ Phase 1 — Foundation</b> &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/></summary>
 <br/>
 
-- [x] Project initialization
-- [x] Hashing engine
-- [x] MD5 / SHA-1 / SHA-256
-- [x] Chunked file hashing
-- [x] CLI file input
-- [x] Basic path validation
-- [x] Basic error handling
+- [x] Modular Python package structure (`cipher/` + `core/`)
+- [x] Interactive CLI (`python -m cipher`)
+- [x] File path input (relative, absolute, paths with spaces)
+- [x] File existence & directory validation
+- [x] File metadata extraction (size, extension, timestamps)
+- [x] Chunked file hashing (MD5 / SHA-1 / SHA-256)
+- [x] Magic-byte file-signature identification (PDF, PNG, ZIP, EXE, JPEG, GIF)
+- [x] Extension validation (MATCH / MISMATCH / UNKNOWN)
+- [x] Explainable evidence engine with structured findings
+- [x] Custom terminal formatter & branding
+
+</details>
+
+<details open>
+<summary><b>🔜 Phase 2 — Static Content Analysis</b> &nbsp;<img src="https://img.shields.io/badge/-Planned-lightgrey?style=flat-square"/></summary>
+<br/>
+
+- [ ] Content extraction
+- [ ] String extraction
+- [ ] URL extraction
+- [ ] Domain extraction
+- [ ] Web / JavaScript analysis
+- [ ] Archive analysis
+- [ ] Suspicious content indicators
+- [ ] Additional evidence generation
 
 </details>
 
 <details>
-<summary><b>🔜 Planned / Upcoming</b> &nbsp;<img src="https://img.shields.io/badge/-Planned-lightgrey?style=flat-square"/></summary>
+<summary><b>🔮 Later Roadmap</b> &nbsp;<img src="https://img.shields.io/badge/-Planned-lightgrey?style=flat-square"/></summary>
 <br/>
 
-- [ ] File identification
-- [ ] Metadata extraction
-- [ ] Evidence engine
-- [ ] Web / JavaScript analyzer
-- [ ] Archive analyzer
 - [ ] APK analyzer
 - [ ] PE analyzer
 - [ ] ELF analyzer
