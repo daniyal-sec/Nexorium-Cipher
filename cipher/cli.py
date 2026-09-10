@@ -1,4 +1,4 @@
-from cipher.core.file_identifier import identify_file
+from cipher.core.analyzer import analyze_file
 from cipher.core.formatter import format_analysis
 
 
@@ -11,7 +11,7 @@ def run():
         return
 
     try:
-        result = identify_file(file_path)
+        result = analyze_file(file_path)
 
     except FileNotFoundError:
         print("ERROR: File not found.")

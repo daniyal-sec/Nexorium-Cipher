@@ -1,0 +1,2 @@
+This is a normal plain text file.
+There is no programming language here.
