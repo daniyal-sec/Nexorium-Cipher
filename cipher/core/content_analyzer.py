@@ -9,6 +9,7 @@ from cipher.core.indicators import (
 )
 from cipher.core.indicator_analysis import analyze_indicators
 from cipher.core.html_analyzer import analyze_html
+from cipher.core.html_analysis import analyze_html_findings
 from cipher.core.javascript_analyzer import analyze_javascript
 from cipher.core.javascript_analysis import analyze_javascript_findings
 
@@ -18,13 +19,14 @@ def analyze_content(file_path):
     Run the Phase 2 static content-analysis pipeline.
 
     The function first determines whether the file is text or binary.
+
     Text files are then classified into a more specific content type.
 
     HTML and JavaScript content are passed to their respective
     static analyzers.
 
-    JavaScript observations are additionally converted into
-    structured findings.
+    HTML and JavaScript observations are additionally converted
+    into structured findings.
 
     Returns:
         dict: Structured Phase 2 content-analysis result.
@@ -73,15 +75,23 @@ def analyze_content(file_path):
     )
 
     result["content_type"] = content_type["type"]
-    result["classification_confidence"] = content_type["confidence"]
-    result["classification_reason"] = content_type["reason"]
+
+    result["classification_confidence"] = (
+        content_type["confidence"]
+    )
+
+    result["classification_reason"] = (
+        content_type["reason"]
+    )
 
     # -----------------------------------------------------------------------
     # Network indicators
     # -----------------------------------------------------------------------
 
     urls = extract_urls(content)
+
     ipv4_addresses = extract_ipv4_addresses(content)
+
     domains = extract_domains(content)
 
     result["indicators"] = {
@@ -102,7 +112,17 @@ def analyze_content(file_path):
 
     if content_type["type"] == "html":
 
-        result["html_analysis"] = analyze_html(content)
+        html_analysis = analyze_html(content)
+
+        result["html_analysis"] = html_analysis
+
+        html_findings = analyze_html_findings(
+            html_analysis
+        )
+
+        result["findings"].extend(
+            html_findings
+        )
 
     # -----------------------------------------------------------------------
     # JavaScript analysis
@@ -110,12 +130,18 @@ def analyze_content(file_path):
 
     elif content_type["type"] == "javascript":
 
-        javascript_analysis = analyze_javascript(content)
+        javascript_analysis = analyze_javascript(
+            content
+        )
 
-        result["javascript_analysis"] = javascript_analysis
-
-        javascript_findings = analyze_javascript_findings(
+        result["javascript_analysis"] = (
             javascript_analysis
+        )
+
+        javascript_findings = (
+            analyze_javascript_findings(
+                javascript_analysis
+            )
         )
 
         result["findings"].extend(

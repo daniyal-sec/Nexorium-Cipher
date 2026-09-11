@@ -1,10 +1,6 @@
 import re
 
 
-# ---------------------------------------------------------------------------
-# Function detection
-# ---------------------------------------------------------------------------
-
 FUNCTION_DECLARATION_PATTERN = re.compile(
     r"\bfunction\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\("
 )
@@ -21,18 +17,9 @@ ARROW_FUNCTION_PATTERN = re.compile(
 
 
 def extract_js_functions(content):
-    """
-    Extract JavaScript function names and anonymous function counts.
-
-    Returns:
-        dict: Function analysis result.
-    """
-
-    named_functions = list(
-        dict.fromkeys(
-            FUNCTION_DECLARATION_PATTERN.findall(content)
-        )
-    )
+    named_functions = list(dict.fromkeys(
+        FUNCTION_DECLARATION_PATTERN.findall(content)
+    ))
 
     anonymous_functions = len(
         FUNCTION_EXPRESSION_PATTERN.findall(content)
@@ -55,21 +42,9 @@ def extract_js_functions(content):
 
 
 def detect_js_functions(content):
-    """
-    Detect whether JavaScript functions are present.
-
-    Returns:
-        bool: True if at least one function is detected.
-    """
-
     result = extract_js_functions(content)
-
     return result["total"] > 0
 
-
-# ---------------------------------------------------------------------------
-# Variable detection
-# ---------------------------------------------------------------------------
 
 VARIABLE_PATTERN = re.compile(
     r"\b(const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)"
@@ -77,29 +52,16 @@ VARIABLE_PATTERN = re.compile(
 
 
 def extract_js_variables(content):
-    """
-    Extract JavaScript variable declarations.
-
-    Returns:
-        list[dict]: Variable declarations found in the content.
-    """
-
     variables = []
 
     for declaration_type, name in VARIABLE_PATTERN.findall(content):
-        variables.append(
-            {
-                "name": name,
-                "declaration": declaration_type,
-            }
-        )
+        variables.append({
+            "name": name,
+            "declaration": declaration_type
+        })
 
     return variables
 
-
-# ---------------------------------------------------------------------------
-# Console API detection
-# ---------------------------------------------------------------------------
 
 CONSOLE_PATTERN = re.compile(
     r"\bconsole\.([A-Za-z_$][A-Za-z0-9_$]*)\s*\("
@@ -107,21 +69,10 @@ CONSOLE_PATTERN = re.compile(
 
 
 def extract_console_apis(content):
-    """
-    Extract console API calls.
-
-    Returns:
-        list[str]: Console methods found in the content.
-    """
-
     methods = CONSOLE_PATTERN.findall(content)
 
     return list(dict.fromkeys(methods))
 
-
-# ---------------------------------------------------------------------------
-# Browser API detection
-# ---------------------------------------------------------------------------
 
 BROWSER_API_PATTERNS = {
     "document": re.compile(r"\bdocument\."),
@@ -131,36 +82,20 @@ BROWSER_API_PATTERNS = {
 
 
 def detect_browser_apis(content):
-    """
-    Detect common browser API usage.
-
-    Returns:
-        list[str]: Browser APIs detected.
-    """
-
     detected = []
 
     for name, pattern in BROWSER_API_PATTERNS.items():
+
         if pattern.search(content):
             detected.append(name)
 
     return detected
 
 
-# ---------------------------------------------------------------------------
-# DOM / input analysis
-# ---------------------------------------------------------------------------
-
 DOM_API_PATTERNS = {
-    "querySelector": re.compile(
-        r"\bquerySelector\s*\("
-    ),
-    "querySelectorAll": re.compile(
-        r"\bquerySelectorAll\s*\("
-    ),
-    "getElementById": re.compile(
-        r"\bgetElementById\s*\("
-    ),
+    "querySelector": re.compile(r"\bquerySelector\s*\("),
+    "querySelectorAll": re.compile(r"\bquerySelectorAll\s*\("),
+    "getElementById": re.compile(r"\bgetElementById\s*\("),
     "getElementsByClassName": re.compile(
         r"\bgetElementsByClassName\s*\("
     ),
@@ -174,16 +109,10 @@ DOM_API_PATTERNS = {
 
 
 def detect_dom_apis(content):
-    """
-    Detect common DOM manipulation and event APIs.
-
-    Returns:
-        list[str]: DOM APIs detected.
-    """
-
     detected = []
 
     for name, pattern in DOM_API_PATTERNS.items():
+
         if pattern.search(content):
             detected.append(name)
 
@@ -196,30 +125,54 @@ INPUT_PATTERN = re.compile(
 
 
 def detect_input_value_access(content):
-    """
-    Detect access to input element values.
-
-    Returns:
-        bool: True if input value access is detected.
-    """
-
     return bool(INPUT_PATTERN.search(content))
 
 
-# ---------------------------------------------------------------------------
-# Network API detection
-# ---------------------------------------------------------------------------
+EVENT_HANDLER_PATTERN = re.compile(
+    r"\.addEventListener\s*\(\s*[\"']([^\"']+)[\"']",
+    re.IGNORECASE
+)
+
+
+INTERESTING_INPUT_EVENTS = {
+    "input",
+    "change",
+    "submit",
+    "keydown",
+    "keyup",
+    "keypress",
+}
+
+
+def extract_event_handlers(content):
+    events = EVENT_HANDLER_PATTERN.findall(content)
+
+    return list(
+        dict.fromkeys(
+            event.lower()
+            for event in events
+        )
+    )
+
+
+def detect_input_collection_events(content):
+    events = extract_event_handlers(content)
+
+    return [
+        event
+        for event in events
+        if event in INTERESTING_INPUT_EVENTS
+    ]
+
+
+def detect_form_submission_events(content):
+    return "submit" in detect_input_collection_events(content)
+
 
 NETWORK_API_PATTERNS = {
-    "fetch": re.compile(
-        r"\bfetch\s*\("
-    ),
-    "XMLHttpRequest": re.compile(
-        r"\bXMLHttpRequest\b"
-    ),
-    "WebSocket": re.compile(
-        r"\bWebSocket\s*\("
-    ),
+    "fetch": re.compile(r"\bfetch\s*\("),
+    "XMLHttpRequest": re.compile(r"\bXMLHttpRequest\b"),
+    "WebSocket": re.compile(r"\bWebSocket\s*\("),
     "sendBeacon": re.compile(
         r"\bnavigator\.sendBeacon\s*\("
     ),
@@ -227,67 +180,37 @@ NETWORK_API_PATTERNS = {
 
 
 def detect_network_apis(content):
-    """
-    Detect common JavaScript network communication APIs.
-
-    Returns:
-        list[str]: Network APIs detected.
-    """
-
     detected = []
 
     for name, pattern in NETWORK_API_PATTERNS.items():
+
         if pattern.search(content):
             detected.append(name)
 
     return detected
 
 
-# ---------------------------------------------------------------------------
-# Storage API detection
-# ---------------------------------------------------------------------------
-
 STORAGE_API_PATTERNS = {
-    "localStorage": re.compile(
-        r"\blocalStorage\b"
-    ),
-    "sessionStorage": re.compile(
-        r"\bsessionStorage\b"
-    ),
-    "cookies": re.compile(
-        r"\bdocument\.cookie\b"
-    ),
+    "localStorage": re.compile(r"\blocalStorage\b"),
+    "sessionStorage": re.compile(r"\bsessionStorage\b"),
+    "cookies": re.compile(r"\bdocument\.cookie\b"),
 }
 
 
 def detect_storage_apis(content):
-    """
-    Detect browser storage mechanisms.
-
-    Returns:
-        list[str]: Storage mechanisms detected.
-    """
-
     detected = []
 
     for name, pattern in STORAGE_API_PATTERNS.items():
+
         if pattern.search(content):
             detected.append(name)
 
     return detected
 
 
-# ---------------------------------------------------------------------------
-# Dynamic execution detection
-# ---------------------------------------------------------------------------
-
 DYNAMIC_EXECUTION_PATTERNS = {
-    "eval": re.compile(
-        r"\beval\s*\("
-    ),
-    "Function": re.compile(
-        r"\bnew\s+Function\s*\("
-    ),
+    "eval": re.compile(r"\beval\s*\("),
+    "Function": re.compile(r"\bnew\s+Function\s*\("),
     "setTimeout_string": re.compile(
         r"\bsetTimeout\s*\(\s*[\"'`]"
     ),
@@ -298,25 +221,15 @@ DYNAMIC_EXECUTION_PATTERNS = {
 
 
 def detect_dynamic_execution(content):
-    """
-    Detect JavaScript constructs capable of dynamic code execution.
-
-    Returns:
-        list[str]: Dynamic execution mechanisms detected.
-    """
-
     detected = []
 
     for name, pattern in DYNAMIC_EXECUTION_PATTERNS.items():
+
         if pattern.search(content):
             detected.append(name)
 
     return detected
 
-
-# ---------------------------------------------------------------------------
-# URL extraction
-# ---------------------------------------------------------------------------
 
 URL_PATTERN = re.compile(
     r"(?:https?|wss?|ws)://[^\s\"'<>]+",
@@ -325,21 +238,75 @@ URL_PATTERN = re.compile(
 
 
 def extract_js_urls(content):
-    """
-    Extract HTTP, HTTPS, WS, and WSS URLs from JavaScript content.
-
-    Returns:
-        list[str]: Unique URLs found in the content.
-    """
-
     urls = URL_PATTERN.findall(content)
 
     return list(dict.fromkeys(urls))
 
 
-# ---------------------------------------------------------------------------
-# Obfuscation indicators
-# ---------------------------------------------------------------------------
+SENSITIVE_DATA_PATTERNS = {
+    "password": re.compile(
+        r"\bpassword\b",
+        re.IGNORECASE
+    ),
+    "username": re.compile(
+        r"\busername\b",
+        re.IGNORECASE
+    ),
+    "email": re.compile(
+        r"\bemail\b",
+        re.IGNORECASE
+    ),
+    "credential": re.compile(
+        r"\bcredentials?\b",
+        re.IGNORECASE
+    ),
+    "token": re.compile(
+        r"\btoken\b",
+        re.IGNORECASE
+    ),
+    "auth": re.compile(
+        r"\bauth(?:entication|orization)?\b",
+        re.IGNORECASE
+    ),
+    "secret": re.compile(
+        r"\bsecret\b",
+        re.IGNORECASE
+    ),
+    "api_key": re.compile(
+        r"\bapi[_-]?key\b",
+        re.IGNORECASE
+    ),
+    "session": re.compile(
+        r"\bsession(?:id|_id)?\b",
+        re.IGNORECASE
+    ),
+}
+
+
+def detect_sensitive_data_indicators(content):
+    detected = []
+
+    for name, pattern in SENSITIVE_DATA_PATTERNS.items():
+
+        if pattern.search(content):
+            detected.append(name)
+
+    return detected
+
+
+def detect_cookie_access(content):
+    return bool(
+        re.search(
+            r"\bdocument\.cookie\b",
+            content,
+            re.IGNORECASE
+        )
+    )
+
+
+# ------------------------------------------------------------------
+# JavaScript Obfuscation Analysis
+# ------------------------------------------------------------------
 
 LONG_STRING_PATTERN = re.compile(
     r"""["'`]([^"'`]{100,})["'`]"""
@@ -353,56 +320,117 @@ UNICODE_ESCAPE_PATTERN = re.compile(
     r"\\u[0-9a-fA-F]{4}"
 )
 
+BASE64_STRING_PATTERN = re.compile(
+    r"""["'`]([A-Za-z0-9+/]{40,}={0,2})["'`]"""
+)
+
 
 def detect_obfuscation_indicators(content):
     """
-    Detect basic indicators that may be associated with obfuscated
-    JavaScript.
+    Detect stronger indicators commonly associated with
+    JavaScript obfuscation.
 
-    These observations do not prove that code is malicious or
-    intentionally obfuscated.
+    Long strings are observed separately because a long string
+    can be completely legitimate.
 
     Returns:
-        dict: Obfuscation indicators.
+        dict: Structured obfuscation observations.
     """
 
     long_strings = LONG_STRING_PATTERN.findall(content)
+
     hex_escapes = HEX_ESCAPE_PATTERN.findall(content)
+
     unicode_escapes = UNICODE_ESCAPE_PATTERN.findall(content)
+
+    base64_strings = BASE64_STRING_PATTERN.findall(content)
+
+    encoded_string_count = (
+        len(hex_escapes)
+        + len(unicode_escapes)
+        + len(base64_strings)
+    )
+
+    score = 0
+
+    if len(hex_escapes) >= 3:
+        score += 1
+
+    if len(unicode_escapes) >= 3:
+        score += 1
+
+    if len(base64_strings) >= 1:
+        score += 1
+
+    if len(hex_escapes) >= 10:
+        score += 1
+
+    if len(unicode_escapes) >= 10:
+        score += 1
+
+    if len(base64_strings) >= 3:
+        score += 1
+
+    if score >= 2:
+        assessment = "HIGH"
+
+    elif score == 1:
+        assessment = "MEDIUM"
+
+    else:
+        assessment = "NONE"
 
     return {
         "long_string_count": len(long_strings),
         "hex_escape_count": len(hex_escapes),
         "unicode_escape_count": len(unicode_escapes),
+        "base64_like_string_count": len(base64_strings),
+        "encoded_string_count": encoded_string_count,
+        "score": score,
+        "assessment": assessment,
     }
 
 
-# ---------------------------------------------------------------------------
-# Complete JavaScript analysis
-# ---------------------------------------------------------------------------
-
 def analyze_javascript(content):
-    """
-    Run the complete static JavaScript analysis.
-
-    This function observes JavaScript structure and behavior-related
-    constructs. It does not execute the JavaScript.
-
-    Returns:
-        dict: Structured JavaScript analysis result.
-    """
-
     functions = extract_js_functions(content)
+
     variables = extract_js_variables(content)
+
     console_apis = extract_console_apis(content)
+
     browser_apis = detect_browser_apis(content)
+
     dom_apis = detect_dom_apis(content)
+
     network_apis = detect_network_apis(content)
+
     storage_apis = detect_storage_apis(content)
+
     dynamic_execution = detect_dynamic_execution(content)
+
     urls = extract_js_urls(content)
+
     input_value_access = detect_input_value_access(content)
-    obfuscation = detect_obfuscation_indicators(content)
+
+    sensitive_data = detect_sensitive_data_indicators(
+        content
+    )
+
+    cookie_access = detect_cookie_access(content)
+
+    event_handlers = extract_event_handlers(content)
+
+    input_collection_events = detect_input_collection_events(
+        content
+    )
+
+    form_submission_events = detect_form_submission_events(
+        content
+    )
+
+    obfuscation = detect_obfuscation_indicators(
+        content
+    )
 
     return {
         "functions": functions,
@@ -411,9 +439,14 @@ def analyze_javascript(content):
         "browser_apis": browser_apis,
         "dom_apis": dom_apis,
         "input_value_access": input_value_access,
+        "event_handlers": event_handlers,
+        "input_collection_events": input_collection_events,
+        "form_submission_events": form_submission_events,
         "network_apis": network_apis,
         "storage_apis": storage_apis,
         "dynamic_execution": dynamic_execution,
         "urls": urls,
+        "sensitive_data": sensitive_data,
+        "cookie_access": cookie_access,
         "obfuscation": obfuscation,
     }

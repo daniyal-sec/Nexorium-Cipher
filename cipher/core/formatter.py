@@ -224,6 +224,64 @@ def _level_tag(level):
     )
 
 
+def _format_evidence(evidence, indent="    "):
+    """
+    Format evidence while preserving meaningful multiline structure.
+
+    HTML tags and other multiline evidence are kept line-by-line
+    instead of having their internal whitespace collapsed.
+    """
+
+    evidence = str(evidence)
+
+    if not evidence.strip():
+        return [f"{indent}None"]
+
+    lines = evidence.splitlines()
+
+    formatted = []
+
+    for line in lines:
+
+        if not line.strip():
+            formatted.append("")
+            continue
+
+        stripped = line.strip()
+
+        wrapped = textwrap.wrap(
+            stripped,
+            width=WIDTH - len(indent),
+            
+            break_long_words=False if False else False,
+            break_on_hyphens=False,
+        )
+
+        if not wrapped:
+            formatted.append(indent)
+            continue
+
+        for wrapped_line in wrapped:
+            formatted.append(
+                f"{indent}{wrapped_line}"
+            )
+
+    return formatted
+
+
+def _format_text_block(text, indent="    "):
+    """
+    Wrap a normal prose block for terminal display.
+    """
+
+    return textwrap.fill(
+        str(text),
+        width=WIDTH - len(indent),
+        initial_indent=indent,
+        subsequent_indent=indent,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Findings
 # ---------------------------------------------------------------------------
@@ -231,22 +289,6 @@ def _level_tag(level):
 def format_finding(finding, index=None):
 
     field_indent = "  "
-    body_indent = "    "
-    body_width = WIDTH - len(body_indent)
-
-    wrapped_evidence = textwrap.fill(
-        str(finding["evidence"]),
-        width=body_width,
-        initial_indent=body_indent,
-        subsequent_indent=body_indent,
-    )
-
-    wrapped_explanation = textwrap.fill(
-        str(finding["explanation"]),
-        width=body_width,
-        initial_indent=body_indent,
-        subsequent_indent=body_indent,
-    )
 
     number = (
         f"{_c(f'{index:02d}', _Ansi.DIM)}  "
@@ -284,7 +326,11 @@ def format_finding(finding, index=None):
         )
     )
 
-    lines.append(wrapped_evidence)
+    lines.extend(
+        _format_evidence(
+            finding["evidence"]
+        )
+    )
 
     lines.append("")
 
@@ -295,7 +341,11 @@ def format_finding(finding, index=None):
         )
     )
 
-    lines.append(wrapped_explanation)
+    lines.append(
+        _format_text_block(
+            finding["explanation"]
+        )
+    )
 
     return "\n".join(lines)
 
@@ -331,7 +381,12 @@ def _format_html_analysis(html_analysis):
 
     if forms:
         for form in forms:
-            lines.append(f"  {form}")
+            lines.extend(
+                _format_evidence(
+                    form,
+                    indent="  "
+                )
+            )
     else:
         lines.append("  None")
 
@@ -356,7 +411,94 @@ def _format_html_analysis(html_analysis):
 
     if password_inputs:
         for password_input in password_inputs:
-            lines.append(f"  {password_input}")
+            lines.extend(
+                _format_evidence(
+                    password_input,
+                    indent="  "
+                )
+            )
+    else:
+        lines.append("  None")
+
+    # --- Hidden inputs ---------------------------------------------------
+
+    hidden_inputs_detected = html_analysis.get(
+        "hidden_inputs_detected",
+        False
+    )
+
+    lines.append(
+        f"Hidden inputs detected   : "
+        f"{hidden_inputs_detected}"
+    )
+
+    hidden_inputs = html_analysis.get(
+        "hidden_inputs",
+        []
+    )
+
+    lines.append("Hidden inputs            :")
+
+    if hidden_inputs:
+        for hidden_input in hidden_inputs:
+            lines.extend(
+                _format_evidence(
+                    hidden_input,
+                    indent="  "
+                )
+            )
+    else:
+        lines.append("  None")
+
+    # --- Script tags -----------------------------------------------------
+
+    script_tags_detected = html_analysis.get(
+        "script_tags_detected",
+        False
+    )
+
+    lines.append(
+        f"Script tags detected     : "
+        f"{script_tags_detected}"
+    )
+
+    script_tags = html_analysis.get(
+        "script_tags",
+        []
+    )
+
+    lines.append("Script tags              :")
+
+    if script_tags:
+        for script_tag in script_tags:
+            lines.extend(
+                _format_evidence(
+                    script_tag,
+                    indent="  "
+                )
+            )
+    else:
+        lines.append("  None")
+
+    # --- External JavaScript --------------------------------------------
+
+    external_javascript_sources = html_analysis.get(
+        "external_javascript_sources",
+        []
+    )
+
+    lines.append(
+        f"External JavaScript     : "
+        f"{len(external_javascript_sources) > 0}"
+    )
+
+    lines.append(
+        "JavaScript sources      :"
+    )
+
+    if external_javascript_sources:
+        for source in external_javascript_sources:
+            lines.append(f"  {source}")
     else:
         lines.append("  None")
 
@@ -387,6 +529,260 @@ def _format_html_analysis(html_analysis):
     if methods:
         for method in methods:
             lines.append(f"  {method}")
+    else:
+        lines.append("  None")
+
+    # --- Form destinations ----------------------------------------------
+
+    form_destinations = html_analysis.get(
+        "form_destinations",
+        {}
+    )
+
+    http_destinations = form_destinations.get(
+        "http_destinations",
+        []
+    )
+
+    https_destinations = form_destinations.get(
+        "https_destinations",
+        []
+    )
+
+    ip_destinations = form_destinations.get(
+        "ip_destinations",
+        []
+    )
+
+    relative_destinations = form_destinations.get(
+        "relative_destinations",
+        []
+    )
+
+    unusual_scheme_destinations = form_destinations.get(
+        "unusual_scheme_destinations",
+        []
+    )
+
+    lines.append("")
+    lines.append("FORM DESTINATION ANALYSIS")
+
+    lines.append(
+        f"HTTP destinations       : "
+        f"{len(http_destinations)}"
+    )
+
+    if http_destinations:
+        for destination in http_destinations:
+            lines.append(f"  {destination}")
+
+    lines.append(
+        f"HTTPS destinations      : "
+        f"{len(https_destinations)}"
+    )
+
+    if https_destinations:
+        for destination in https_destinations:
+            lines.append(f"  {destination}")
+
+    lines.append(
+        f"IP destinations         : "
+        f"{len(ip_destinations)}"
+    )
+
+    if ip_destinations:
+        for destination in ip_destinations:
+            lines.append(f"  {destination}")
+
+    lines.append(
+        f"Relative destinations   : "
+        f"{len(relative_destinations)}"
+    )
+
+    if relative_destinations:
+        for destination in relative_destinations:
+            lines.append(f"  {destination}")
+
+    lines.append(
+        f"Unusual schemes         : "
+        f"{len(unusual_scheme_destinations)}"
+    )
+
+    if unusual_scheme_destinations:
+        for destination in unusual_scheme_destinations:
+            lines.append(f"  {destination}")
+
+    # --- Iframes ---------------------------------------------------------
+
+    iframes_detected = html_analysis.get(
+        "iframes_detected",
+        False
+    )
+
+    iframes = html_analysis.get(
+        "iframes",
+        []
+    )
+
+    iframe_sources = html_analysis.get(
+        "iframe_sources",
+        []
+    )
+
+    lines.append("")
+    lines.append("IFRAME ANALYSIS")
+
+    lines.append(
+        f"Iframes detected        : {iframes_detected}"
+    )
+
+    lines.append(
+        f"Iframe count            : {len(iframes)}"
+    )
+
+    lines.append("Iframe sources          :")
+
+    if iframe_sources:
+        for source in iframe_sources:
+            lines.append(f"  {source}")
+    else:
+        lines.append("  None")
+
+    # --- HTML resources --------------------------------------------------
+
+    image_sources = html_analysis.get(
+        "image_sources",
+        []
+    )
+
+    link_resources = html_analysis.get(
+        "link_resources",
+        []
+    )
+
+    html_resources = html_analysis.get(
+        "html_resources",
+        {}
+    )
+
+    external_iframes = html_resources.get(
+        "external_iframes",
+        []
+    )
+
+    external_images = html_resources.get(
+        "external_images",
+        []
+    )
+
+    external_links = html_resources.get(
+        "external_links",
+        []
+    )
+
+    unusual_iframes = html_resources.get(
+        "unusual_iframes",
+        []
+    )
+
+    unusual_images = html_resources.get(
+        "unusual_images",
+        []
+    )
+
+    unusual_links = html_resources.get(
+        "unusual_links",
+        []
+    )
+
+    lines.append("")
+    lines.append("HTML RESOURCE ANALYSIS")
+
+    lines.append(
+        f"Image resources         : "
+        f"{len(image_sources)}"
+    )
+
+    if image_sources:
+        for source in image_sources:
+            lines.append(f"  {source}")
+    else:
+        lines.append("  None")
+
+    lines.append(
+        f"External images         : "
+        f"{len(external_images)}"
+    )
+
+    if external_images:
+        for source in external_images:
+            lines.append(f"  {source}")
+    else:
+        lines.append("  None")
+
+    lines.append(
+        f"Link resources          : "
+        f"{len(link_resources)}"
+    )
+
+    if link_resources:
+        for resource in link_resources:
+            lines.append(f"  {resource}")
+    else:
+        lines.append("  None")
+
+    lines.append(
+        f"External links          : "
+        f"{len(external_links)}"
+    )
+
+    if external_links:
+        for resource in external_links:
+            lines.append(f"  {resource}")
+    else:
+        lines.append("  None")
+
+    lines.append(
+        f"External iframes       : "
+        f"{len(external_iframes)}"
+    )
+
+    if external_iframes:
+        for source in external_iframes:
+            lines.append(f"  {source}")
+    else:
+        lines.append("  None")
+
+    lines.append(
+        f"Unusual iframe schemes : "
+        f"{len(unusual_iframes)}"
+    )
+
+    if unusual_iframes:
+        for source in unusual_iframes:
+            lines.append(f"  {source}")
+    else:
+        lines.append("  None")
+
+    lines.append(
+        f"Unusual image schemes  : "
+        f"{len(unusual_images)}"
+    )
+
+    if unusual_images:
+        for source in unusual_images:
+            lines.append(f"  {source}")
+    else:
+        lines.append("  None")
+
+    lines.append(
+        f"Unusual link schemes   : "
+        f"{len(unusual_links)}"
+    )
+
+    if unusual_links:
+        for resource in unusual_links:
+            lines.append(f"  {resource}")
     else:
         lines.append("  None")
 
@@ -443,7 +839,7 @@ def _format_javascript_analysis(javascript_analysis):
     )
 
     lines.append(
-        f"Named functions        : {len(named_functions)}"
+        f"Named functions         : {len(named_functions)}"
     )
 
     if named_functions:
@@ -498,7 +894,7 @@ def _format_javascript_analysis(javascript_analysis):
     )
 
     lines.append(
-        f"Console APIs            :"
+        "Console APIs            :"
     )
 
     if console_apis:
@@ -520,7 +916,7 @@ def _format_javascript_analysis(javascript_analysis):
     )
 
     lines.append(
-        f"Browser APIs            :"
+        "Browser APIs            :"
     )
 
     if browser_apis:
@@ -529,7 +925,7 @@ def _format_javascript_analysis(javascript_analysis):
     else:
         lines.append("  None")
 
-    # --- DOM APIs -------------------------------------------------------
+    # --- DOM APIs --------------------------------------------------------
 
     dom_apis = javascript_analysis.get(
         "dom_apis",
@@ -542,7 +938,7 @@ def _format_javascript_analysis(javascript_analysis):
     )
 
     lines.append(
-        f"DOM APIs                :"
+        "DOM APIs                :"
     )
 
     if dom_apis:
@@ -563,6 +959,110 @@ def _format_javascript_analysis(javascript_analysis):
         f"Input value access      : {input_value_access}"
     )
 
+    # --- Event handlers -------------------------------------------------
+
+    event_handlers = javascript_analysis.get(
+        "event_handlers",
+        []
+    )
+
+    lines.append("")
+    lines.append(
+        f"Event handlers detected : "
+        f"{len(event_handlers) > 0}"
+    )
+
+    lines.append(
+        f"Event handler count     : "
+        f"{len(event_handlers)}"
+    )
+
+    lines.append(
+        "Event handlers          :"
+    )
+
+    if event_handlers:
+        for event in event_handlers:
+            lines.append(f"  {event}")
+    else:
+        lines.append("  None")
+
+    # --- Input collection events ----------------------------------------
+
+    input_collection_events = javascript_analysis.get(
+        "input_collection_events",
+        []
+    )
+
+    lines.append("")
+    lines.append(
+        f"Input collection events : "
+        f"{len(input_collection_events)}"
+    )
+
+    lines.append(
+        "Input-related events    :"
+    )
+
+    if input_collection_events:
+        for event in input_collection_events:
+            lines.append(f"  {event}")
+    else:
+        lines.append("  None")
+
+    # --- Form submission events -----------------------------------------
+
+    form_submission_events = javascript_analysis.get(
+        "form_submission_events",
+        False
+    )
+
+    lines.append("")
+    lines.append(
+        f"Form submission events  : "
+        f"{form_submission_events}"
+    )
+
+    # --- Sensitive data -------------------------------------------------
+
+    sensitive_data = javascript_analysis.get(
+        "sensitive_data",
+        []
+    )
+
+    lines.append("")
+    lines.append(
+        f"Sensitive data detected : "
+        f"{len(sensitive_data) > 0}"
+    )
+
+    lines.append(
+        f"Sensitive references    : "
+        f"{len(sensitive_data)}"
+    )
+
+    lines.append(
+        "Sensitive categories    :"
+    )
+
+    if sensitive_data:
+        for category in sensitive_data:
+            lines.append(f"  {category}")
+    else:
+        lines.append("  None")
+
+    # --- Cookie access --------------------------------------------------
+
+    cookie_access = javascript_analysis.get(
+        "cookie_access",
+        False
+    )
+
+    lines.append("")
+    lines.append(
+        f"Cookie access           : {cookie_access}"
+    )
+
     # --- Network APIs ---------------------------------------------------
 
     network_apis = javascript_analysis.get(
@@ -576,7 +1076,7 @@ def _format_javascript_analysis(javascript_analysis):
     )
 
     lines.append(
-        f"Network APIs            :"
+        "Network APIs            :"
     )
 
     if network_apis:
@@ -598,7 +1098,7 @@ def _format_javascript_analysis(javascript_analysis):
     )
 
     lines.append(
-        f"Storage APIs            :"
+        "Storage APIs            :"
     )
 
     if storage_apis:
@@ -621,7 +1121,7 @@ def _format_javascript_analysis(javascript_analysis):
     )
 
     lines.append(
-        f"Execution mechanisms    :"
+        "Execution mechanisms    :"
     )
 
     if dynamic_execution:
@@ -642,17 +1142,54 @@ def _format_javascript_analysis(javascript_analysis):
         f"JavaScript URLs         : {len(urls)}"
     )
 
-    if urls:
-        lines.append("URLs                    :")
+    lines.append("URLs                    :")
 
+    if urls:
         for url in urls:
             lines.append(f"  {url}")
+    else:
+        lines.append("  None")
 
     # --- Obfuscation ----------------------------------------------------
 
     obfuscation = javascript_analysis.get(
         "obfuscation",
         {}
+    )
+
+    long_string_count = obfuscation.get(
+        "long_string_count",
+        0
+    )
+
+    hex_escape_count = obfuscation.get(
+        "hex_escape_count",
+        0
+    )
+
+    unicode_escape_count = obfuscation.get(
+        "unicode_escape_count",
+        0
+    )
+
+    base64_like_string_count = obfuscation.get(
+        "base64_like_string_count",
+        0
+    )
+
+    encoded_string_count = obfuscation.get(
+        "encoded_string_count",
+        0
+    )
+
+    obfuscation_score = obfuscation.get(
+        "score",
+        0
+    )
+
+    obfuscation_assessment = obfuscation.get(
+        "assessment",
+        "NONE"
     )
 
     lines.append("")
@@ -662,17 +1199,37 @@ def _format_javascript_analysis(javascript_analysis):
 
     lines.append(
         f"Long strings            : "
-        f"{obfuscation.get('long_string_count', 0)}"
+        f"{long_string_count}"
     )
 
     lines.append(
         f"Hex escapes             : "
-        f"{obfuscation.get('hex_escape_count', 0)}"
+        f"{hex_escape_count}"
     )
 
     lines.append(
         f"Unicode escapes         : "
-        f"{obfuscation.get('unicode_escape_count', 0)}"
+        f"{unicode_escape_count}"
+    )
+
+    lines.append(
+        f"Base64-like strings     : "
+        f"{base64_like_string_count}"
+    )
+
+    lines.append(
+        f"Encoded strings         : "
+        f"{encoded_string_count}"
+    )
+
+    lines.append(
+        f"Obfuscation score       : "
+        f"{obfuscation_score}"
+    )
+
+    lines.append(
+        f"Assessment              : "
+        f"{obfuscation_assessment}"
     )
 
     return lines

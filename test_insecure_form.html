@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Login Test</title>
-
-        <script src="https://example.com/js/login.js"></script>
+        <title>Insecure Login Test</title>
     </head>
 
     <body>
@@ -11,7 +9,7 @@
         <h1>Login</h1>
 
         <form
-            action="https://example.com/login"
+            action="http://192.168.1.50/collect"
             method="POST"
         >
 
@@ -23,12 +21,6 @@
             <input
                 type="password"
                 name="password"
-            >
-
-            <input
-                type="hidden"
-                name="session_token"
-                value="test123"
             >
 
             <button type="submit">
