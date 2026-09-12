@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-Phase%201%20Complete-9D4EDD?style=for-the-badge" alt="status"/>
+  <img src="https://img.shields.io/badge/status-Phase%202%20Complete-9D4EDD?style=for-the-badge" alt="status"/>
   <img src="https://img.shields.io/badge/category-Malware%20Analysis-9D4EDD?style=for-the-badge" alt="category"/>
   <img src="https://img.shields.io/badge/license-MIT-brightgreen?style=for-the-badge" alt="license"/>
 </p>
@@ -32,8 +32,9 @@
 - [📖 Overview](#overview)
 - [🚦 Current Status](#current-status)
 - [🚀 Installation & Usage](#installation--usage)
-- [💻 Example](#example)
+- [💻 Examples](#examples)
 - [🏗️ Project Architecture](#project-architecture)
+- [🧪 Testing](#testing)
 - [🧩 Explainable Findings](#explainable-findings)
 - [🗂️ Planned Analysis Capabilities](#planned-analysis-capabilities)
 - [🔮 Future Detection & Analysis](#future-detection--analysis)
@@ -75,13 +76,85 @@ Cipher currently identifies file formats using magic-byte/file-signature detecti
 
 **Important:** `MATCH` does not prove a file is safe. `MISMATCH` does not prove a file is malicious. `UNKNOWN` does not prove a file is malicious either. These are observations from the current file-identification layer, not a verdict — they may warrant further investigation.
 
+### Phase 2 — Static Content Analysis &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/>
+
+Phase 2 is complete. Cipher can now read and analyze text-based file content — HTML, JavaScript, and plain text/Python — instead of only identifying the file format. It classifies what it's looking at, then extracts security-relevant indicators from it.
+
+<p align="left">
+<img src="https://img.shields.io/badge/-Content%20Classification-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-HTML%20Analysis-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-JavaScript%20Analysis-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Network%20Indicator%20Extraction-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-Obfuscation%20Scoring-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Structured%20Findings-302b63?style=flat-square"/>
+</p>
+
+<details>
+<summary><b>📄 Generic Content Analysis</b></summary>
+<br/>
+
+- Text vs. binary classification
+- UTF-8 text reading
+- Content statistics (character, line, and word counts)
+- Empty-content detection
+- Content type detection (plain text, Python, HTML, JavaScript)
+
+</details>
+
+<details>
+<summary><b>🌐 Network Indicator Analysis</b></summary>
+<br/>
+
+- HTTP/HTTPS URL extraction
+- WS/WSS URL extraction (JavaScript)
+- IPv4 address extraction
+- Domain extraction
+- Structured network-indicator findings
+
+</details>
+
+<details>
+<summary><b>🧾 HTML Analysis</b></summary>
+<br/>
+
+- Forms, password inputs, hidden inputs
+- Script tags and external JavaScript sources
+- Form actions and methods
+- Form-destination analysis (HTTP, HTTPS, IP-based, relative, and unusual schemes)
+- Iframes, images, and links — including external and unusual-scheme variants
+- Structured HTML security findings
+
+</details>
+
+<details>
+<summary><b>⚙️ JavaScript Analysis</b></summary>
+<br/>
+
+- Named, anonymous, and arrow functions; variables
+- Browser, DOM, and console APIs
+- Input-value access and event handlers, including user-input collection and form-submission events
+- Network APIs, browser storage, and cookie access
+- Dynamic code execution, plus HTTP/HTTPS and WS/WSS URLs
+- Sensitive-data references
+- Structured JavaScript findings
+
+</details>
+
+<details>
+<summary><b>🕵️ JavaScript Obfuscation Analysis</b></summary>
+<br/>
+
+- Long strings, tracked separately from other evidence
+- Hex escapes, Unicode escapes, and Base64-like strings
+- Encoded-string counting
+- Obfuscation score and overall assessment
+
+**Note:** long strings alone are not treated as sufficient evidence of obfuscation. This was an intentional design choice to reduce false positives — obfuscation is only flagged when several corroborating indicators appear together.
+
+</details>
+
 ---
 
 ## 🚀 Installation & Usage
 
 **Requirements:**
 - Python 3.x
-- No external Python dependencies are currently required for Phase 1.
+- No external Python dependencies are currently required for Phases 1–2.
 
 **Run Cipher:**
 
@@ -109,7 +182,9 @@ Cipher will then analyze the file and display a full, formatted investigation re
 
 ---
 
-## 💻 Example
+## 💻 Examples
+
+### File-signature mismatch
 
 ```
 python -m cipher
@@ -157,11 +232,85 @@ ERROR: The supplied path is a directory.
 Please provide a file.
 ```
 
+### HTML form analysis
+
+```
+python -m cipher
+
+Enter file path: login.html
+```
+
+```
+FINDINGS (2)
+
+01  [MEDIUM] Password input detected
+Category   : HTML Analysis
+Confidence : [HIGH]
+
+Evidence:
+  <input type="password" name="pwd">
+
+Explanation:
+  The page contains a password input field, indicating a
+  login or credential-collection form.
+
+02  [HIGH] Form submits to an external, IP-based destination
+Category   : HTML Analysis
+Confidence : [MEDIUM]
+
+Evidence:
+  <form action="http://185.12.44.9/collect.php" method="POST">
+
+Explanation:
+  The form submits captured input over plain HTTP to an
+  IP-based destination rather than the page's own domain —
+  a pattern often seen on credential-harvesting pages.
+```
+
+### JavaScript static analysis
+
+```
+python -m cipher
+
+Enter file path: payload.js
+```
+
+```
+FINDINGS (2)
+
+01  [MEDIUM] Dynamic code execution
+Category   : JavaScript Analysis
+Confidence : [HIGH]
+
+Evidence:
+  eval(atob("ZnVuY3Rpb24oKXsgLi4uIH0="))
+
+Explanation:
+  The script decodes a string at runtime and passes it to
+  eval(). This is a static-analysis observation about code
+  structure — Cipher does not execute the script.
+
+02  [LOW] Obfuscation indicators present
+Category   : JavaScript Analysis
+Confidence : [MEDIUM]
+
+Evidence:
+  3 Base64-like strings, 2 hex-escaped sequences
+
+Explanation:
+  Multiple encoded-string patterns were found alongside
+  dynamic execution. On their own, encoded strings are not
+  proof of malicious intent, but combined with eval() usage
+  they raise the overall concern level.
+```
+
+**Note:** "dynamic code execution" here means Cipher has statically detected constructs such as `eval()`, `new Function()`, or string-based timers in the source. Cipher does not run or execute the analyzed file — actual dynamic/behavioral execution analysis is future work (see [Roadmap](#roadmap)).
+
 ---
 
 ## 🏗️ Project Architecture
 
-The project is now a modular Python package with a clear separation between analysis and presentation.
+The project is a modular Python package with a clear separation between analysis and presentation.
 
 ```
 Nexorium-Cipher/
@@ -175,15 +324,36 @@ Nexorium-Cipher/
 │   ├── cli.py
 │   │
 │   └── core/
+│       ├── analyzer.py
 │       ├── hashing.py
 │       ├── file_identifier.py
 │       ├── evidence.py
-│       └── formatter.py
+│       ├── formatter.py
+│       │
+│       ├── content/
+│       │   ├── content_analyzer.py
+│       │   ├── content_reader.py
+│       │   ├── content_classifier.py
+│       │   ├── content_stats.py
+│       │   └── content_type_detector.py
+│       │
+│       ├── network/
+│       │   ├── indicators.py
+│       │   └── indicator_analysis.py
+│       │
+│       ├── html/
+│       │   ├── html_analyzer.py
+│       │   └── html_analysis.py
+│       │
+│       └── javascript/
+│           ├── javascript_analyzer.py
+│           └── javascript_analysis.py
 │
 ├── tests/
 │   ├── test_hashing.py
 │   ├── test_evidence.py
-│   └── test_identifier.py
+│   ├── test_identifier.py
+│   └── ... (additional Phase 2 analyzer tests)
 │
 ├── README.md
 ├── .gitignore
@@ -197,16 +367,31 @@ flowchart TD
     U["User"] --> CLI["CLI<br/>python -m cipher"]
     CLI --> FI["File Identifier"]
     FI --> HE["Hashing Engine"]
+    FI --> CC["Content Classifier"]
+    CC -->|"HTML"| HA["HTML Analyzer"]
+    CC -->|"JavaScript"| JA["JavaScript Analyzer"]
+    CC --> IA["Indicator Analysis<br/>URLs · IPs · Domains"]
     HE --> EE["Evidence Engine"]
+    HA --> EE
+    JA --> EE
+    IA --> EE
     EE --> TF["Terminal Formatter"]
     TF --> R["Report"]
 ```
 
-The formatter is a presentation layer only — it renders the result that `file_identifier.py`, `hashing.py`, and `evidence.py` already produced, and never performs analysis itself.
+The formatter is a presentation layer only — it renders the result that the identification, hashing, and content-analysis modules already produced, and never performs analysis itself.
 
 The files inside `tests/` are development/testing scripts, not the normal way to run Cipher — for everyday use, run `python -m cipher`.
 
 The architecture will expand as additional analysis capabilities are implemented.
+
+---
+
+## 🧪 Testing
+
+Meaningful features are validated by running them through the main Cipher CLI (`python -m cipher`) against a set of controlled test files — deliberately mismatched extensions, sample HTML forms, and JavaScript snippets built to exercise specific analyzers (obfuscated strings, `eval()` usage, credential-harvesting form patterns, and so on). The scripts in `tests/` support this during development.
+
+This is functional validation of the analyzers, not a production malware sandbox — Cipher does not yet run samples in an isolated dynamic-analysis environment. That's planned for a later phase (see [Roadmap](#roadmap)).
 
 ---
 
@@ -218,7 +403,7 @@ A major design goal of Cipher is to avoid simply producing:
 MALWARE: YES
 ```
 
-Instead, Cipher should eventually produce structured findings containing:
+Instead, Cipher produces structured findings containing:
 
 ```
 Finding
@@ -254,24 +439,22 @@ This approach is intended to make analysis results easier to understand and inve
 
 **Severity** describes how significant or potentially impactful a finding may be. **Confidence** describes how strongly the currently available evidence supports that specific observation — it is not a probability that the file is malware, and a `HIGH` confidence finding does not mean the file is definitely malicious.
 
+An individual finding is an observation about one piece of evidence, not an overall verdict on the file. Cipher does not yet combine multiple findings into a single malicious/benign conclusion — connecting related findings into higher-level, evidence-backed conclusions is the focus of Phase 3 (see [Roadmap](#roadmap)).
+
 ---
 
 ## 🗂️ Planned Analysis Capabilities
 
-The project will eventually expand to support multiple file and application formats.
+The project will eventually expand to support additional file and archive formats.
 
 <details>
-<summary><b>🌐 Web / JavaScript</b></summary>
+<summary><b>📦 Archives</b></summary>
 <br/>
 
-- HTML analysis
-- JavaScript analysis
-- External URLs
-- Redirect indicators
-- Suspicious JavaScript constructs
-- Credential collection indicators
-- Obfuscation detection
-- Network communication indicators
+- Archive listing (ZIP and similar container formats)
+- Nested file identification
+- Per-file hashing and analysis within an archive
+- Suspicious archive-content indicators
 
 </details>
 
@@ -333,7 +516,7 @@ The project will eventually expand to support multiple file and application form
 Future versions are planned to include:
 
 <p align="left">
-<img src="https://img.shields.io/badge/-Evidence%20Collection-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-IOCs-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Static%20Analysis-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-Malware%20Triage-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Obfuscation%20Analysis-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Packing%20Detection-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Network%20Indicators-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Risk%20Assessment-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Confidence%20Levels-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-False--Positive%20Considerations-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-JSON%20Reports-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-HTML%20Reports-2E8B57?style=flat-square"/>
+<img src="https://img.shields.io/badge/-IOC%20Extraction-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Risk%20Engine-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Malware%20Triage-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Packing%20Detection-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Archive%20Analysis-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-JSON%20Reports-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-HTML%20Reports-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Dynamic%20Analysis-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Calibration%20%26%20Hardening-24243e?style=flat-square"/>
 </p>
 
 Dynamic analysis may be introduced later using isolated environments such as dedicated virtual machines or Android emulators.
@@ -413,7 +596,8 @@ The objective is to understand how each component works rather than simply assem
 ## 🗺️ Roadmap
 
 <p align="left">
-<img src="https://img.shields.io/badge/Progress-10%2F27%20Items%20Complete-9D4EDD?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Phase%202-Complete-brightgreen?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Phase%203-Next-9D4EDD?style=for-the-badge"/>
 </p>
 
 <details open>
@@ -434,17 +618,31 @@ The objective is to understand how each component works rather than simply assem
 </details>
 
 <details open>
-<summary><b>🔜 Phase 2 — Static Content Analysis</b> &nbsp;<img src="https://img.shields.io/badge/-Planned-lightgrey?style=flat-square"/></summary>
+<summary><b>✅ Phase 2 — Static Content Analysis</b> &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/></summary>
 <br/>
 
-- [ ] Content extraction
-- [ ] String extraction
-- [ ] URL extraction
-- [ ] Domain extraction
-- [ ] Web / JavaScript analysis
-- [ ] Archive analysis
-- [ ] Suspicious content indicators
-- [ ] Additional evidence generation
+- [x] Generic content analysis (text/binary classification, content statistics, content-type detection)
+- [x] Network indicator extraction (URLs, IPs, domains)
+- [x] HTML analysis (forms, password/hidden inputs, external scripts, iframes, form-destination analysis)
+- [x] JavaScript analysis (functions, variables, browser/DOM APIs, event handlers, network APIs, storage/cookie access, dynamic code execution)
+- [x] JavaScript obfuscation scoring (hex/Unicode escapes, Base64-like strings, false-positive-aware scoring)
+- [x] Structured findings across all of the above
+
+</details>
+
+<details open>
+<summary><b>🔜 Phase 3 — Evidence Correlation</b> &nbsp;<img src="https://img.shields.io/badge/-Next-9D4EDD?style=flat-square"/></summary>
+<br/>
+
+- [ ] Evidence correlation across findings
+- [ ] Related-indicator grouping
+- [ ] Behavioral-pattern detection
+- [ ] Composite findings
+- [ ] Evidence chains
+- [ ] Finding deduplication
+- [ ] Improved severity calibration
+- [ ] Improved confidence calibration
+- [ ] Cross-analyzer correlation
 
 </details>
 
@@ -452,15 +650,14 @@ The objective is to understand how each component works rather than simply assem
 <summary><b>🔮 Later Roadmap</b> &nbsp;<img src="https://img.shields.io/badge/-Planned-lightgrey?style=flat-square"/></summary>
 <br/>
 
-- [ ] APK analyzer
-- [ ] PE analyzer
-- [ ] ELF analyzer
-- [ ] IOC extraction
-- [ ] Risk engine
-- [ ] JSON reporting
-- [ ] HTML reporting
-- [ ] Dynamic analysis
-- [ ] Static + dynamic evidence correlation
+- [ ] Phase 4 — Risk Engine
+- [ ] Phase 5 — Archive Analysis
+- [ ] Phase 6 — Android APK Analysis
+- [ ] Phase 7 — Windows PE Analysis
+- [ ] Phase 8 — Linux ELF Analysis
+- [ ] Phase 9 — Reporting (JSON / HTML)
+- [ ] Phase 10 — Dynamic Analysis
+- [ ] Phase 11 — Final Correlation & Hardening
 
 </details>
 
