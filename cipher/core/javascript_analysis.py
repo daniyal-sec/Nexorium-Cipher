@@ -1,12 +1,56 @@
 from cipher.core.evidence import build_finding
 
 
+def _dynamic_execution_severity(dynamic_execution):
+    """
+    Determine severity from the strength of dynamic execution
+    mechanisms detected by the JavaScript analyzer.
+
+    Strong mechanisms such as eval() and Function() receive HIGH
+    severity. Less direct mechanisms such as string-based
+    setTimeout/setInterval receive MEDIUM severity.
+
+    Confidence remains HIGH because this function only interprets
+    observations already detected by the analyzer.
+    """
+
+    normalized = {
+        str(item).strip().lower()
+        for item in dynamic_execution
+    }
+
+    strong_indicators = {
+        "eval",
+        "function",
+        "new_function",
+        "new function",
+        "function_constructor",
+        "functionconstructor",
+    }
+
+    for indicator in normalized:
+        if indicator in strong_indicators:
+            return "HIGH"
+
+        if "eval" in indicator:
+            return "HIGH"
+
+        if "function" in indicator and "timeout" not in indicator:
+            return "HIGH"
+
+    return "MEDIUM"
+
+
 def analyze_javascript_findings(javascript_analysis):
     """
     Convert JavaScript analyzer observations into structured findings.
 
     This layer interprets observations and assigns severity/confidence.
+
     It does not make an overall malware verdict.
+
+    Each finding also receives machine-readable evidence tags that can
+    be consumed by the Phase 3 correlation engine.
     """
 
     if not javascript_analysis:
@@ -14,9 +58,9 @@ def analyze_javascript_findings(javascript_analysis):
 
     findings = []
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Network communication
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     network_apis = javascript_analysis.get(
         "network_apis",
@@ -36,16 +80,16 @@ def analyze_javascript_findings(javascript_analysis):
                     "but can also be used to send or retrieve data."
                 ),
                 "MEDIUM",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.network"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Input value access
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     if javascript_analysis.get("input_value_access"):
-
         findings.append(
             build_finding(
                 "JavaScript Behavior",
@@ -59,13 +103,14 @@ def analyze_javascript_findings(javascript_analysis):
                     "collection."
                 ),
                 "MEDIUM",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.input.value"]
             )
         )
 
-    # --------------------------------------------------------------
-    # User input events
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Input events
+    # ------------------------------------------------------------------
 
     input_collection_events = javascript_analysis.get(
         "input_collection_events",
@@ -73,7 +118,6 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if input_collection_events:
-
         findings.append(
             build_finding(
                 "JavaScript Input Analysis",
@@ -87,13 +131,14 @@ def analyze_javascript_findings(javascript_analysis):
                     "user-entered data may be collected or processed."
                 ),
                 "MEDIUM",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.input.event"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Sensitive data references
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     sensitive_data = javascript_analysis.get(
         "sensitive_data",
@@ -101,7 +146,6 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if sensitive_data:
-
         findings.append(
             build_finding(
                 "JavaScript Data Access",
@@ -116,16 +160,16 @@ def analyze_javascript_findings(javascript_analysis):
                     "collected or transmitted."
                 ),
                 "MEDIUM",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.sensitive_data"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Cookie access
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     if javascript_analysis.get("cookie_access"):
-
         findings.append(
             build_finding(
                 "JavaScript Data Access",
@@ -138,13 +182,14 @@ def analyze_javascript_findings(javascript_analysis):
                     "data."
                 ),
                 "MEDIUM",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.cookie"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Browser storage
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     storage_apis = javascript_analysis.get(
         "storage_apis",
@@ -152,7 +197,6 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if storage_apis:
-
         findings.append(
             build_finding(
                 "JavaScript Behavior",
@@ -165,13 +209,14 @@ def analyze_javascript_findings(javascript_analysis):
                     "other information depending on the application."
                 ),
                 "LOW",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.storage"]
             )
         )
 
-    # --------------------------------------------------------------
-    # Dynamic execution
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Dynamic code execution
+    # ------------------------------------------------------------------
 
     dynamic_execution = javascript_analysis.get(
         "dynamic_execution",
@@ -179,6 +224,10 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if dynamic_execution:
+
+        severity = _dynamic_execution_severity(
+            dynamic_execution
+        )
 
         findings.append(
             build_finding(
@@ -188,18 +237,19 @@ def analyze_javascript_findings(javascript_analysis):
                 (
                     "The JavaScript contains constructs capable of "
                     "executing code dynamically. Dynamic execution "
-                    "can be legitimate, but it is also commonly "
-                    "investigated because it can hide or generate "
-                    "code at runtime."
+                    "can be legitimate, but stronger mechanisms such "
+                    "as eval() or Function() are commonly investigated "
+                    "because they can hide or generate code at runtime."
                 ),
+                severity,
                 "HIGH",
-                "HIGH"
+                tags=["javascript.dynamic_execution"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Browser APIs
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     browser_apis = javascript_analysis.get(
         "browser_apis",
@@ -207,7 +257,6 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if browser_apis:
-
         findings.append(
             build_finding(
                 "JavaScript Behavior",
@@ -219,13 +268,14 @@ def analyze_javascript_findings(javascript_analysis):
                     "web applications to access browser functionality."
                 ),
                 "LOW",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.browser_api"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # DOM APIs
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     dom_apis = javascript_analysis.get(
         "dom_apis",
@@ -233,7 +283,6 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if dom_apis:
-
         findings.append(
             build_finding(
                 "JavaScript Behavior",
@@ -245,13 +294,14 @@ def analyze_javascript_findings(javascript_analysis):
                     "in interactive web applications."
                 ),
                 "LOW",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.dom"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Console APIs
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     console_apis = javascript_analysis.get(
         "console_apis",
@@ -259,7 +309,6 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if console_apis:
-
         findings.append(
             build_finding(
                 "JavaScript Behavior",
@@ -271,13 +320,14 @@ def analyze_javascript_findings(javascript_analysis):
                     "behavior and is not inherently suspicious."
                 ),
                 "LOW",
-                "HIGH"
+                "HIGH",
+                tags=["javascript.console"]
             )
         )
 
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
     # JavaScript URLs
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     urls = javascript_analysis.get(
         "urls",
@@ -285,7 +335,6 @@ def analyze_javascript_findings(javascript_analysis):
     )
 
     if urls:
-
         findings.append(
             build_finding(
                 "JavaScript Network Indicator",
@@ -297,13 +346,17 @@ def analyze_javascript_findings(javascript_analysis):
                     "alone does not indicate malicious behavior."
                 ),
                 "LOW",
-                "HIGH"
+                "HIGH",
+                tags=[
+                    "javascript.network.url",
+                    "network.external_destination"
+                ]
             )
         )
 
-    # --------------------------------------------------------------
-    # Improved obfuscation analysis
-    # --------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Obfuscation
+    # ------------------------------------------------------------------
 
     obfuscation = javascript_analysis.get(
         "obfuscation",
@@ -367,12 +420,13 @@ def analyze_javascript_findings(javascript_analysis):
                 )
             )
 
-        evidence = ", ".join(evidence_parts)
+        evidence = ", ".join(
+            evidence_parts
+        )
 
         if obfuscation_assessment == "HIGH":
             severity = "HIGH"
             confidence = "HIGH"
-
         else:
             severity = "MEDIUM"
             confidence = "MEDIUM"
@@ -389,7 +443,8 @@ def analyze_javascript_findings(javascript_analysis):
                     "indicators rather than string length alone."
                 ),
                 severity,
-                confidence
+                confidence,
+                tags=["javascript.obfuscation"]
             )
         )
 

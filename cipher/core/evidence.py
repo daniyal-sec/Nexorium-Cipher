@@ -4,15 +4,27 @@ def build_finding(
     evidence,
     explanation,
     severity,
-    confidence
+    confidence,
+    tags=None
 ):
+    """
+    Build a structured Cipher finding.
+
+    Tags provide machine-readable evidence identifiers that can be
+    consumed by later analysis stages such as the Phase 3 correlation
+    engine.
+
+    Existing findings remain compatible because tags are optional.
+    """
+
     return {
         "category": category,
         "finding": finding,
         "evidence": evidence,
         "explanation": explanation,
         "severity": severity,
-        "confidence": confidence
+        "confidence": confidence,
+        "tags": tags or []
     }
 
 
