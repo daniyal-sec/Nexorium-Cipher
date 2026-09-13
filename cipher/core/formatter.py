@@ -226,6 +226,30 @@ def _level_tag(level):
     )
 
 
+def _risk_assessment_tag(assessment):
+    """
+    Colour-code the overall Phase 4 risk assessment.
+    """
+
+    normalized = str(assessment).strip().upper()
+
+    color = {
+        "LIKELY MALICIOUS": _Ansi.BRIGHT_RED,
+        "HIGH": _Ansi.RED,
+        "SUSPICIOUS": _Ansi.YELLOW,
+        "LOW": _Ansi.GREEN,
+        "BENIGN": _Ansi.GREEN,
+    }.get(normalized)
+
+    text = f"[{normalized}]"
+
+    return (
+        _c(text, _Ansi.BOLD, color)
+        if color
+        else text
+    )
+
+
 def _compact_value(value):
     """
     Convert a value into a compact one-line representation.
@@ -1186,6 +1210,122 @@ def _format_content_analysis(result):
 
 
 # ---------------------------------------------------------------------------
+# Risk Assessment — Phase 4
+# ---------------------------------------------------------------------------
+
+def _format_risk_assessment(result):
+    """
+    Format the overall Phase 4 risk assessment.
+
+    The formatter only presents the values calculated by the
+    risk engine. It does not perform any risk calculations.
+    """
+
+    risk = result.get("risk_assessment")
+
+    if not risk:
+        return []
+
+    lines = []
+
+    lines.extend(
+        _section("RISK ASSESSMENT")
+    )
+
+    score = risk.get("score", 0)
+    assessment = risk.get(
+        "assessment",
+        "UNKNOWN"
+    )
+    confidence = risk.get(
+        "confidence",
+        "UNKNOWN"
+    )
+
+    lines.append(
+        _format_inline_fields(
+            [
+                ("Score", f"{score} / 100"),
+                (
+                    "Assessment",
+                    _risk_assessment_tag(assessment)
+                ),
+                (
+                    "Confidence",
+                    _level_tag(confidence)
+                ),
+            ]
+        )
+    )
+
+    risk_factors = risk.get(
+        "risk_factors",
+        []
+    )
+
+    lines.append(
+        _c(
+            "RISK FACTORS",
+            _Ansi.DIM
+        )
+    )
+
+    if not risk_factors:
+        lines.append(
+            f"    {_CHECK} None identified."
+        )
+    else:
+        for factor in risk_factors:
+            lines.extend(
+                _format_wrapped_value(
+                    "•",
+                    factor,
+                    label_width=2,
+                    indent="    "
+                )
+            )
+
+    contributions = risk.get(
+        "contributions",
+        []
+    )
+
+    if contributions:
+        lines.append(
+            _c(
+                "TOP CONTRIBUTIONS",
+                _Ansi.DIM
+            )
+        )
+
+        for contribution in contributions[:5]:
+            finding_name = contribution.get(
+                "finding",
+                "Unknown finding"
+            )
+
+            value = contribution.get(
+                "contribution",
+                0
+            )
+
+            correlation = contribution.get(
+                "correlation",
+                False
+            )
+
+            marker = "◆" if correlation else "•"
+
+            lines.append(
+                f"    {marker} "
+                f"{finding_name}: "
+                f"+{value:.2f}"
+            )
+
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # Full report
 # ---------------------------------------------------------------------------
 
@@ -1355,6 +1495,14 @@ def format_analysis(result):
                     index=number
                 )
             )
+
+    # ------------------------------------------------------------------
+    # Phase 4 — Risk Assessment
+    # ------------------------------------------------------------------
+
+    lines.extend(
+        _format_risk_assessment(result)
+    )
 
     lines.append("")
     lines.append(RULE_HEAVY)
