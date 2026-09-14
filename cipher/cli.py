@@ -1,8 +1,13 @@
+import sys
+
 from cipher.core.analyzer import analyze_file
 from cipher.core.formatter import format_analysis
 
 
 def run():
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
 
     file_path = input("Enter file path: ").strip()
 
