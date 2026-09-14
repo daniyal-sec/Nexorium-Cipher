@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-Phase%202%20Complete-9D4EDD?style=for-the-badge" alt="status"/>
+  <img src="https://img.shields.io/badge/status-Phase%205%20Complete-9D4EDD?style=for-the-badge" alt="status"/>
   <img src="https://img.shields.io/badge/category-Malware%20Analysis-9D4EDD?style=for-the-badge" alt="category"/>
   <img src="https://img.shields.io/badge/license-MIT-brightgreen?style=for-the-badge" alt="license"/>
 </p>
@@ -148,13 +148,92 @@ Phase 2 is complete. Cipher can now read and analyze text-based file content —
 
 </details>
 
+### Phase 3 — Evidence Correlation &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/>
+
+Phase 3 is complete. Cipher no longer treats every finding as an isolated data point — related findings are now correlated into higher-level, composite findings that describe a behavioral pattern rather than a single observation.
+
+<p align="left">
+<img src="https://img.shields.io/badge/-Evidence%20Correlation-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Related--Indicator%20Grouping-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Behavioral%20Pattern%20Detection-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Composite%20Findings-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Evidence%20Chains-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-Finding%20Deduplication-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Cross--Analyzer%20Correlation-8B0000?style=flat-square"/>
+</p>
+
+For example, Cipher can correlate independently observed indicators — user-input/value access, a sensitive-data reference, network communication, and an external destination — into a single higher-level finding describing a potential credential/data-transmission pattern, rather than reporting each observation on its own.
+
+| Type | What it represents |
+|---|---|
+| Individual finding | A single piece of evidence from one analyzer. |
+| Correlated finding | Multiple related pieces of evidence combined into one behavioral observation. |
+
+Correlated findings are also deduplicated, so the same underlying behavior isn't reported more than once across analyzers.
+
+### Phase 4 — Risk Engine &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/>
+
+Phase 4 is complete. Instead of a bare `MALWARE: YES`, Cipher now includes a dedicated risk engine that produces an overall, explainable risk assessment for the file as a whole.
+
+<p align="left">
+<img src="https://img.shields.io/badge/-Overall%20Risk%20Score-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Risk%20Assessment-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Assessment%20Confidence-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Risk%20Factor%20Identification-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Per--Finding%20Contribution-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-Severity%20%26%20Confidence%20Weighting-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Correlation--Aware%20Scoring-8B0000?style=flat-square"/>
+</p>
+
+The risk engine calculates a score by weighing each finding's severity and confidence, factoring in correlated findings, and tracking which specific findings contributed most to the result — so the overall assessment stays traceable back to individual evidence instead of becoming a black box.
+
+**Important:** the risk engine's overall assessment — and the confidence behind it — is still not a certainty of malware. It describes how strongly the combined, explainable evidence points toward risk, not a guarantee.
+
+### Phase 5 — Archive Analysis &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/>
+
+Phase 5 is complete. Cipher can now analyze ZIP archives — not just the archive file itself, but what's inside it.
+
+<p align="left">
+<img src="https://img.shields.io/badge/-ZIP%20Archive%20Identification-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Entry%20Inspection-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Suspicious%20Extension%20Detection-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Executable%20%26%20Script%20Detection-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Nested%20Archive%20Detection-24243e?style=flat-square"/> <img src="https://img.shields.io/badge/-Safe%20Extraction-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Path%20Traversal%20Protection-8B0000?style=flat-square"/>
+</p>
+
+<details>
+<summary><b>📦 Archive Inspection</b></summary>
+<br/>
+
+- ZIP archive identification
+- Archive entry listing (files and directories)
+- File and directory counting
+- Suspicious file-extension detection inside archives
+- Executable detection inside archives
+- Script detection inside archives
+- Nested-archive detection, with recursive analysis of nested archives
+
+</details>
+
+<details>
+<summary><b>🛡️ Safe Extraction</b></summary>
+<br/>
+
+- Extraction to temporary directories
+- Chunked extraction
+- Archive path-traversal detection
+- Absolute-path detection
+- Extraction entry-count limits
+- Maximum extracted-size limits
+
+</details>
+
+<details>
+<summary><b>🔗 Archive-Aware Analysis</b></summary>
+<br/>
+
+- Analysis of individual child files inside an archive
+- Promotion of important child findings up to the parent archive finding
+- Archive-aware finding deduplication
+- Behavioral correlation within archive contents
+- Risk scoring of archive findings
+- Structured archive security findings
+
+</details>
+
+Archive analysis is currently focused on the ZIP format — support for other archive/container formats is planned (see [Planned Analysis Capabilities](#planned-analysis-capabilities)).
+
 ---
 
 ## 🚀 Installation & Usage
 
 **Requirements:**
 - Python 3.x
-- No external Python dependencies are currently required for Phases 1–2.
+- No external Python dependencies are currently required for Phases 1–5.
 
 **Run Cipher:**
 
@@ -306,6 +385,55 @@ Explanation:
 
 **Note:** "dynamic code execution" here means Cipher has statically detected constructs such as `eval()`, `new Function()`, or string-based timers in the source. Cipher does not run or execute the analyzed file — actual dynamic/behavioral execution analysis is future work (see [Roadmap](#roadmap)).
 
+### Archive analysis
+
+```
+python -m cipher
+
+Enter file path: bundle.zip
+```
+
+```
+FINDINGS (3)
+
+01  [MEDIUM] Executable found inside archive
+Category   : Archive Analysis
+Confidence : [HIGH]
+
+Evidence:
+  bundle.zip -> payload.exe
+
+Explanation:
+  The archive contains an executable file. This is not
+  inherently malicious, but executables inside archives
+  warrant further investigation.
+
+02  [MEDIUM] Nested archive detected
+Category   : Archive Analysis
+Confidence : [HIGH]
+
+Evidence:
+  bundle.zip -> inner.zip
+
+Explanation:
+  The archive contains another archive. Cipher recursively
+  analyzed the nested archive's contents.
+
+03  [HIGH] Archive path traversal detected
+Category   : Archive Analysis
+Confidence : [HIGH]
+
+Evidence:
+  Entry path "../../etc/passwd" would extract outside the
+  target directory.
+
+Explanation:
+  This entry's resolved path attempts to escape the
+  extraction directory.
+```
+
+**Note:** the path-traversal entry above is blocked before extraction — Cipher validates that each entry's resolved path stays inside the extraction directory before anything is written to disk.
+
 ---
 
 ## 🏗️ Project Architecture
@@ -329,6 +457,9 @@ Nexorium-Cipher/
 │       ├── file_identifier.py
 │       ├── evidence.py
 │       ├── formatter.py
+│       ├── archive_analyzer.py
+│       ├── archive_extractor.py
+│       ├── archive_pipeline.py
 │       │
 │       ├── content/
 │       │   ├── content_analyzer.py
@@ -353,7 +484,7 @@ Nexorium-Cipher/
 │   ├── test_hashing.py
 │   ├── test_evidence.py
 │   ├── test_identifier.py
-│   └── ... (additional Phase 2 analyzer tests)
+│   └── ... (additional analyzer, correlation, risk-engine, and archive tests)
 │
 ├── README.md
 ├── .gitignore
@@ -368,18 +499,23 @@ flowchart TD
     CLI --> FI["File Identifier"]
     FI --> HE["Hashing Engine"]
     FI --> CC["Content Classifier"]
+    FI -->|"Archive"| AA["Archive Analyzer<br/>+ Safe Extractor"]
     CC -->|"HTML"| HA["HTML Analyzer"]
     CC -->|"JavaScript"| JA["JavaScript Analyzer"]
     CC --> IA["Indicator Analysis<br/>URLs · IPs · Domains"]
+    AA -->|"Child Files"| FI
     HE --> EE["Evidence Engine"]
     HA --> EE
     JA --> EE
     IA --> EE
-    EE --> TF["Terminal Formatter"]
+    AA --> EE
+    EE --> COR["Correlation Engine"]
+    COR --> RE["Risk Engine"]
+    RE --> TF["Terminal Formatter"]
     TF --> R["Report"]
 ```
 
-The formatter is a presentation layer only — it renders the result that the identification, hashing, and content-analysis modules already produced, and never performs analysis itself.
+The formatter is a presentation layer only — it renders the result that the identification, hashing, content-analysis, correlation, and risk-engine modules already produced, and never performs analysis itself.
 
 The files inside `tests/` are development/testing scripts, not the normal way to run Cipher — for everyday use, run `python -m cipher`.
 
@@ -389,7 +525,9 @@ The architecture will expand as additional analysis capabilities are implemented
 
 ## 🧪 Testing
 
-Meaningful features are validated by running them through the main Cipher CLI (`python -m cipher`) against a set of controlled test files — deliberately mismatched extensions, sample HTML forms, and JavaScript snippets built to exercise specific analyzers (obfuscated strings, `eval()` usage, credential-harvesting form patterns, and so on). The scripts in `tests/` support this during development.
+Meaningful features are validated by running them through the main Cipher CLI (`python -m cipher`) against a set of controlled test files — deliberately mismatched extensions, sample HTML forms, JavaScript snippets built to exercise specific analyzers (obfuscated strings, `eval()` usage, credential-harvesting form patterns), and archive files built to exercise the Phase 5 pipeline: a normal archive containing an executable/script/nested archive, a credential/data-transmission archive, a benign archive, a path-traversal archive, an absolute-path archive, and archives exceeding the maximum entry count or maximum extracted-size limit. The scripts in `tests/` support this during development.
+
+Regression testing after adding archive support confirmed that the existing hashing, identification, content-analysis, and correlation capabilities continued to work as expected.
 
 This is functional validation of the analyzers, not a production malware sandbox — Cipher does not yet run samples in an isolated dynamic-analysis environment. That's planned for a later phase (see [Roadmap](#roadmap)).
 
@@ -439,7 +577,7 @@ This approach is intended to make analysis results easier to understand and inve
 
 **Severity** describes how significant or potentially impactful a finding may be. **Confidence** describes how strongly the currently available evidence supports that specific observation — it is not a probability that the file is malware, and a `HIGH` confidence finding does not mean the file is definitely malicious.
 
-An individual finding is an observation about one piece of evidence, not an overall verdict on the file. Cipher does not yet combine multiple findings into a single malicious/benign conclusion — connecting related findings into higher-level, evidence-backed conclusions is the focus of Phase 3 (see [Roadmap](#roadmap)).
+An individual finding is an observation about one piece of evidence, not an overall verdict on the file. Cipher now correlates related findings into higher-level, evidence-backed behavioral observations (Phase 3), and combines the full set of findings — individual and correlated — into an overall, explainable risk assessment through the risk engine (Phase 4). That overall assessment describes how strongly the combined evidence points toward risk; it is still not a certainty of malware.
 
 ---
 
@@ -451,10 +589,12 @@ The project will eventually expand to support additional file and archive format
 <summary><b>📦 Archives</b></summary>
 <br/>
 
-- Archive listing (ZIP and similar container formats)
-- Nested file identification
-- Per-file hashing and analysis within an archive
-- Suspicious archive-content indicators
+ZIP archive analysis is now implemented — see [Current Status](#current-status) and [Roadmap](#roadmap) (Phase 5).
+
+Remaining planned archive-format support:
+
+- RAR, 7z, and TAR container formats
+- ISO/disk-image containers
 
 </details>
 
@@ -516,7 +656,7 @@ The project will eventually expand to support additional file and archive format
 Future versions are planned to include:
 
 <p align="left">
-<img src="https://img.shields.io/badge/-IOC%20Extraction-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Risk%20Engine-302b63?style=flat-square"/> <img src="https://img.shields.io/badge/-Malware%20Triage-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Packing%20Detection-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-Archive%20Analysis-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-JSON%20Reports-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-HTML%20Reports-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Dynamic%20Analysis-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Calibration%20%26%20Hardening-24243e?style=flat-square"/>
+<img src="https://img.shields.io/badge/-IOC%20Extraction-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Malware%20Triage-4B0082?style=flat-square"/> <img src="https://img.shields.io/badge/-Packing%20Detection-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-JSON%20Reports-8B0000?style=flat-square"/> <img src="https://img.shields.io/badge/-HTML%20Reports-2E8B57?style=flat-square"/> <img src="https://img.shields.io/badge/-Dynamic%20Analysis-1B3B6F?style=flat-square"/> <img src="https://img.shields.io/badge/-Calibration%20%26%20Hardening-24243e?style=flat-square"/>
 </p>
 
 Dynamic analysis may be introduced later using isolated environments such as dedicated virtual machines or Android emulators.
@@ -596,8 +736,8 @@ The objective is to understand how each component works rather than simply assem
 ## 🗺️ Roadmap
 
 <p align="left">
-  <img src="https://img.shields.io/badge/Phase%202-Complete-brightgreen?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Phase%203-Next-9D4EDD?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Phase%205-Complete-brightgreen?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Phase%206-Next-9D4EDD?style=for-the-badge"/>
 </p>
 
 <details open>
@@ -631,18 +771,71 @@ The objective is to understand how each component works rather than simply assem
 </details>
 
 <details open>
-<summary><b>🔜 Phase 3 — Evidence Correlation</b> &nbsp;<img src="https://img.shields.io/badge/-Next-9D4EDD?style=flat-square"/></summary>
+<summary><b>✅ Phase 3 — Evidence Correlation</b> &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/></summary>
 <br/>
 
-- [ ] Evidence correlation across findings
-- [ ] Related-indicator grouping
-- [ ] Behavioral-pattern detection
-- [ ] Composite findings
-- [ ] Evidence chains
-- [ ] Finding deduplication
-- [ ] Improved severity calibration
-- [ ] Improved confidence calibration
-- [ ] Cross-analyzer correlation
+- [x] Evidence correlation across findings
+- [x] Related-indicator grouping
+- [x] Behavioral-pattern detection
+- [x] Composite findings
+- [x] Evidence chains
+- [x] Finding deduplication
+- [x] Improved severity calibration
+- [x] Improved confidence calibration
+- [x] Cross-analyzer correlation
+
+</details>
+
+<details open>
+<summary><b>✅ Phase 4 — Risk Engine</b> &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/></summary>
+<br/>
+
+- [x] Overall risk score calculation
+- [x] Overall risk assessment
+- [x] Assessment confidence calculation
+- [x] Risk-factor identification
+- [x] Per-finding contribution tracking
+- [x] Severity- and confidence-weighted scoring
+- [x] Correlation-aware risk scoring
+- [x] Explainable risk scoring (no bare "MALWARE: YES" verdict)
+
+</details>
+
+<details open>
+<summary><b>✅ Phase 5 — Archive Analysis</b> &nbsp;<img src="https://img.shields.io/badge/-Complete-brightgreen?style=flat-square"/></summary>
+<br/>
+
+- [x] ZIP archive identification and entry inspection (file/directory counts, suspicious extensions)
+- [x] Executable and script detection inside archives
+- [x] Nested-archive detection with recursive analysis
+- [x] Safe extraction to temporary directories with chunked reads
+- [x] Archive path-traversal and absolute-path detection
+- [x] Extraction entry-count and maximum-size limits
+- [x] Per-child-file analysis with promotion of key findings to the parent archive
+- [x] Archive-aware finding deduplication and behavioral correlation
+- [x] Risk scoring of archive findings
+- [x] Structured archive security findings
+
+</details>
+
+<details open>
+<summary><b>🔜 Phase 6 — Android APK Analysis</b> &nbsp;<img src="https://img.shields.io/badge/-Next-9D4EDD?style=flat-square"/></summary>
+<br/>
+
+- [ ] Android Manifest analysis
+- [ ] Permissions
+- [ ] Activities
+- [ ] Services
+- [ ] Broadcast receivers
+- [ ] Exported components
+- [ ] DEX analysis
+- [ ] Native libraries
+- [ ] Certificates
+- [ ] Package metadata
+- [ ] URLs and domains
+- [ ] Suspicious APIs
+- [ ] Obfuscation indicators
+- [ ] Dynamic code loading indicators
 
 </details>
 
@@ -650,9 +843,6 @@ The objective is to understand how each component works rather than simply assem
 <summary><b>🔮 Later Roadmap</b> &nbsp;<img src="https://img.shields.io/badge/-Planned-lightgrey?style=flat-square"/></summary>
 <br/>
 
-- [ ] Phase 4 — Risk Engine
-- [ ] Phase 5 — Archive Analysis
-- [ ] Phase 6 — Android APK Analysis
 - [ ] Phase 7 — Windows PE Analysis
 - [ ] Phase 8 — Linux ELF Analysis
 - [ ] Phase 9 — Reporting (JSON / HTML)
