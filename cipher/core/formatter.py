@@ -1276,13 +1276,24 @@ def _format_risk_assessment(result):
         )
     else:
         for factor in risk_factors:
-            lines.extend(
-                _format_wrapped_value(
-                    "•",
-                    factor,
-                    label_width=2,
-                    indent="    "
-                )
+            wrapped = textwrap.wrap(
+                str(factor),
+                width=WIDTH - 6,
+                break_long_words=False,
+                break_on_hyphens=False,
+        )
+
+            if not wrapped:
+                lines.append("    •")
+                continue
+
+            lines.append(
+            f"    • {wrapped[0]}"
+        )
+
+            for line in wrapped[1:]:
+                lines.append(
+                f"      {line}"
             )
 
     contributions = risk.get(
